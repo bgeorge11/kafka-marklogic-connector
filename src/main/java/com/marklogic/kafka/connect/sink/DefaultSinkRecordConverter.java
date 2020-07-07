@@ -1,5 +1,19 @@
 package com.marklogic.kafka.connect.sink;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Map;
+import org.apache.kafka.connect.data.Schema;
+import org.apache.kafka.connect.data.Struct;
+/*For Avro conversion */
+import org.apache.kafka.connect.json.JsonConverter;
+import org.apache.kafka.connect.sink.SinkRecord;
+import org.apache.kafka.connect.storage.Converter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.marklogic.client.document.DocumentWriteOperation;
 import com.marklogic.client.ext.document.DocumentWriteOperationBuilder;
 import com.marklogic.client.io.BytesHandle;
@@ -7,13 +21,26 @@ import com.marklogic.client.io.DocumentMetadataHandle;
 import com.marklogic.client.io.Format;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.io.marker.AbstractWriteHandle;
+import org.apache.kafka.connect.json.JsonConverter;
 import org.apache.kafka.connect.sink.SinkRecord;
-import java.util.Map;
+import org.apache.kafka.connect.storage.Converter;
+import java.util.Collections;
+import org.apache.kafka.connect.json.JsonConverter;
 
 /**
  * Handles converting a SinkRecord into a DocumentWriteOperation via the properties in the given config map.
  */
 public class DefaultSinkRecordConverter implements SinkRecordConverter {
+
+	/*
+	 * v1.2.2 changes
+	 */
+	String converter = "STRING"; 
+	private static final Converter JSON_CONVERTER;
+	static {
+	    JSON_CONVERTER = new JsonConverter();
+	    JSON_CONVERTER.configure(Collections.singletonMap("schemas.enable", "false"), false);
+		}
 
 	private DocumentWriteOperationBuilder documentWriteOperationBuilder;
 	private Format format;
@@ -73,6 +100,31 @@ public class DefaultSinkRecordConverter implements SinkRecordConverter {
 			throw new NullPointerException("'record' must not be null, and must have a value.");
 		}
 		Object value = record.value();
+		/*
+		 * v1.2.2 changes - START
+		 */
+		Schema schema = record.valueSchema();
+		/* Determine the converter */
+		if (schema != null && value instanceof Struct) {
+			/* Avro or JSON with schema, ignore schema, handle only the value */
+			converter = "AVRO_OR_JSON_WITH_SCHEMA";
+			final String payload = new String(JSON_CONVERTER.fromConnectData(record.topic(), schema, value), StandardCharsets.UTF_8);
+			value = payload.getBytes();
+		}
+		
+        if (value instanceof Map) {
+        	converter = "JSON_WITHOUT_SCHEMA";
+        	value = new String (JSON_CONVERTER.fromConnectData(record.topic(), null, value)).getBytes();
+        }
+        
+		if (value instanceof String) {
+			converter = "STRING";
+        }
+		
+		/*
+		 * v1.2.2 changes - END
+		 */
+		
 		if (value instanceof byte[]) {
 			BytesHandle content = new BytesHandle((byte[]) value);
 			if (format != null) {
