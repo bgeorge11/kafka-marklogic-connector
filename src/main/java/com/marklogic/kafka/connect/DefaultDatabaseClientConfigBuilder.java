@@ -48,6 +48,7 @@ public class DefaultDatabaseClientConfigBuilder implements DatabaseClientConfigB
 		/*
 		 * v1.2.2 changes START
 		 */
+		String ssl = kafkaConfig.get(MarkLogicSinkConfig.SSL);
 		String tlsVersion = kafkaConfig.get(MarkLogicSinkConfig.TLS_VERSION);
 		String sslHostNameVerifier = kafkaConfig.get(MarkLogicSinkConfig.SSL_HOST_VERIFIER);
 		String sslMutualAuth = kafkaConfig.get(MarkLogicSinkConfig.SSL_MUTUAL_AUTH);
@@ -87,66 +88,47 @@ public class DefaultDatabaseClientConfigBuilder implements DatabaseClientConfigB
 		if ("BASIC".equals(securityContextType) ||
 				"DIGEST".equals(securityContextType)
 				) {
-					if (sslMutualAuth != null && Boolean.parseBoolean(sslMutualAuth)) {
-						/*2 way ssl changes*/
-						KeyStore clientKeyStore = null;
-						try {
-							clientKeyStore = KeyStore.getInstance("PKCS12");
-						} catch (KeyStoreException e) {
-							
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						}
-				        TrustManager[] trust = new TrustManager[] { new SimpleX509TrustManager()};
-						
-				        try (InputStream keystoreInputStream = new FileInputStream(clientConfig.getCertFile())) {
-				            clientKeyStore.load(keystoreInputStream, clientConfig.getCertPassword().toCharArray());
-				        } catch (FileNotFoundException e) {
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						} catch (IOException e) {
-							
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						} catch (NoSuchAlgorithmException e) {
-							
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						} catch (CertificateException e) {
-							
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						}
-				        KeyManagerFactory keyManagerFactory = null;
-						try {
-							keyManagerFactory = KeyManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-						} catch (NoSuchAlgorithmException e) {
-							
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						}
-				        try {
-							keyManagerFactory.init(clientKeyStore, clientConfig.getCertPassword().toCharArray());
-						} catch (UnrecoverableKeyException | KeyStoreException | NoSuchAlgorithmException e) {
-							
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						}
-				        KeyManager[] key = keyManagerFactory.getKeyManagers();
-						try {
-							if (tlsVersion != null && tlsVersion.trim().length() > 0 ) {
-								sslContext = SSLContext.getInstance(tlsVersion);
+					if (ssl != null && Boolean.parseBoolean(ssl)) {
+						if (sslMutualAuth != null && Boolean.parseBoolean(sslMutualAuth)) {
+							/*2 way ssl changes*/
+							KeyStore clientKeyStore = null;
+							try {
+								clientKeyStore = KeyStore.getInstance("PKCS12");
+							} catch (KeyStoreException e) {
+								
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
 							}
-							else {
-								sslContext = SSLContext.getInstance("TLSv1.2");
-							}
-						} catch (NoSuchAlgorithmException e) {
+					        TrustManager[] trust = new TrustManager[] { new SimpleX509TrustManager()};
 							
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						}
-				        try {
-							sslContext.init(key, trust, null);
-						} catch (KeyManagementException e) {
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
-						}
-						clientConfig.setSslContext(sslContext);
-					}
-					else {/*1wayssl*/
-						TrustManager[] trust = new TrustManager[] { new SimpleX509TrustManager()};
-						try {
+					        try (InputStream keystoreInputStream = new FileInputStream(clientConfig.getCertFile())) {
+					            clientKeyStore.load(keystoreInputStream, clientConfig.getCertPassword().toCharArray());
+					        } catch (FileNotFoundException e) {
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							} catch (IOException e) {
+								
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							} catch (NoSuchAlgorithmException e) {
+								
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							} catch (CertificateException e) {
+								
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							}
+					        KeyManagerFactory keyManagerFactory = null;
+							try {
+								keyManagerFactory = KeyManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+							} catch (NoSuchAlgorithmException e) {
+								
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							}
+					        try {
+								keyManagerFactory.init(clientKeyStore, clientConfig.getCertPassword().toCharArray());
+							} catch (UnrecoverableKeyException | KeyStoreException | NoSuchAlgorithmException e) {
+								
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							}
+					        KeyManager[] key = keyManagerFactory.getKeyManagers();
+							try {
 								if (tlsVersion != null && tlsVersion.trim().length() > 0 ) {
 									sslContext = SSLContext.getInstance(tlsVersion);
 								}
@@ -154,15 +136,36 @@ public class DefaultDatabaseClientConfigBuilder implements DatabaseClientConfigB
 									sslContext = SSLContext.getInstance("TLSv1.2");
 								}
 							} catch (NoSuchAlgorithmException e) {
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+								
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							}
+					        try {
+								sslContext.init(key, trust, null);
+							} catch (KeyManagementException e) {
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							}
+							clientConfig.setSslContext(sslContext);
 						}
-						try {
-							sslContext.init(null, trust, null);
-						}catch (KeyManagementException e) {
-							throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+						else {/*1wayssl*/
+							TrustManager[] trust = new TrustManager[] { new SimpleX509TrustManager()};
+							try {
+									if (tlsVersion != null && tlsVersion.trim().length() > 0 ) {
+										sslContext = SSLContext.getInstance(tlsVersion);
+									}
+									else {
+										sslContext = SSLContext.getInstance("TLSv1.2");
+									}
+								} catch (NoSuchAlgorithmException e) {
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							}
+							try {
+								sslContext.init(null, trust, null);
+							}catch (KeyManagementException e) {
+								throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
+							}
+							clientConfig.setSslContext(sslContext);
 						}
-						clientConfig.setSslContext(sslContext);
-					}
+					} /* End of if ssl */
 			}
 		/*
 		 * v1.2.2 changes END
@@ -170,7 +173,7 @@ public class DefaultDatabaseClientConfigBuilder implements DatabaseClientConfigB
 		
 		String simpleSsl = kafkaConfig.get(MarkLogicSinkConfig.CONNECTION_SIMPLE_SSL);
 		if (simpleSsl != null && Boolean.parseBoolean(simpleSsl)) {
-			configureSimpleSsl(clientConfig);
+			clientConfig = configureSimpleSsl(clientConfig);
 		}
 
 		clientConfig.setUsername(kafkaConfig.get(MarkLogicSinkConfig.CONNECTION_USERNAME));
@@ -185,14 +188,14 @@ public class DefaultDatabaseClientConfigBuilder implements DatabaseClientConfigB
 	 *
 	 * @param clientConfig
 	 */
-	protected void configureSimpleSsl(DatabaseClientConfig clientConfig) {
+	protected DatabaseClientConfig configureSimpleSsl(DatabaseClientConfig clientConfig) {
 		try {
 			clientConfig.setSslContext(SSLContext.getDefault());
 			clientConfig.setTrustManager(new SimpleX509TrustManager());
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Unable to get default SSLContext: " + e.getMessage(), e);
 		}
-
 		clientConfig.setSslHostnameVerifier(DatabaseClientFactory.SSLHostnameVerifier.ANY);
+		return clientConfig;
 	}
 }

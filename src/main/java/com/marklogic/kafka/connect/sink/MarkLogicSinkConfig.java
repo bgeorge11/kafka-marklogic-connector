@@ -44,6 +44,7 @@ public class MarkLogicSinkConfig extends AbstractConfig {
 	/*
 	 * v1.2.2 changes
 	 */
+	public static final String SSL = "ml.connection.ssl";
 	public static final String TLS_VERSION = "ml.connection.tlsVersion";
 	public static final String SSL_HOST_VERIFIER = "ml.connection.hostNameVerifier";
 	public static final String SSL_MUTUAL_AUTH = "ml.connection.mutualAuth";
@@ -78,6 +79,7 @@ public class MarkLogicSinkConfig extends AbstractConfig {
 		/*
 		 * v1.2.2 changes
 		 */
+		.define(SSL, Type.BOOLEAN, Importance.LOW, "Whether SSL connection to the App server - true or false.")
 		.define(TLS_VERSION, Type.STRING, Importance.LOW, "Version of TLS to connect to MarkLogic SSL enabled App server. Ex. TLSv1.2")
 		.define(SSL_HOST_VERIFIER, Type.STRING, Importance.LOW, "The strictness of Host Verifier - ANY, COMMON, STRICT")
 		.define(SSL_MUTUAL_AUTH, Type.BOOLEAN, Importance.LOW, "Mutual Authentication for Basic or Digest : true or false");
