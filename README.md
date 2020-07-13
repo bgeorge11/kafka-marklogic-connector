@@ -1,8 +1,8 @@
-#v1.2.3 Changes 
+# v1.2.3 Changes 
 1. Supporting two ID Strategies for generating URIs - HASH and JSONPATH 
 Refer MarkLogic_Kafka_Connector_v1.2.3.pdf 
 
-#v1.2.2 Changes
+# v1.2.2 Changes
 1. Support of AVRO and JSON Converters 
 2. Support of additional authentication options 
 3. Documentation of error handling
