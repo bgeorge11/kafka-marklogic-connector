@@ -58,9 +58,15 @@ public class DefaultSinkRecordConverter implements SinkRecordConverter {
 			.withCollections(kafkaConfig.get(MarkLogicSinkConfig.DOCUMENT_COLLECTIONS))
 			.withPermissions(kafkaConfig.get(MarkLogicSinkConfig.DOCUMENT_PERMISSIONS))
 			.withUriPrefix(kafkaConfig.get(MarkLogicSinkConfig.DOCUMENT_URI_PREFIX))
-			.withUriSuffix(kafkaConfig.get(MarkLogicSinkConfig.DOCUMENT_URI_SUFFIX));
+			.withUriSuffix(kafkaConfig.get(MarkLogicSinkConfig.DOCUMENT_URI_SUFFIX))
+			/*
+			 * v1.2.3
+			 */
+			.withIdStrategy(kafkaConfig.get(MarkLogicSinkConfig.ID_STRATEGY))
+			.withIdStrategyPath(kafkaConfig.get(MarkLogicSinkConfig.ID_STRATEGY_PATH))
+			;
 
-		 val = kafkaConfig.get(MarkLogicSinkConfig.DOCUMENT_FORMAT);
+		val = kafkaConfig.get(MarkLogicSinkConfig.DOCUMENT_FORMAT);
 		if (val != null && val.trim().length() > 0) {
 			format = Format.valueOf(val.toUpperCase());
 		}
@@ -71,7 +77,7 @@ public class DefaultSinkRecordConverter implements SinkRecordConverter {
 	}
 	
 	@Override
-	public DocumentWriteOperation convert(SinkRecord sinkRecord) {
+	public DocumentWriteOperation convert(SinkRecord sinkRecord) throws IOException{
 		return documentWriteOperationBuilder.build(toContent(sinkRecord), addTopicToCollections(sinkRecord.topic(), addTopicToCollections ) );
 	}
 

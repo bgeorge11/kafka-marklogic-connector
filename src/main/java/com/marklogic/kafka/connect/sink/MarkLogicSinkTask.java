@@ -7,6 +7,7 @@ import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.ext.DatabaseClientConfig;
 import com.marklogic.client.ext.DefaultConfiguredDatabaseClientFactory;
 import com.marklogic.kafka.connect.DefaultDatabaseClientConfigBuilder;
+
 import org.apache.kafka.connect.sink.SinkRecord;
 import org.apache.kafka.connect.sink.SinkTask;
 import org.slf4j.Logger;
@@ -16,6 +17,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
+
 
 /**
  * Performs the actual work associated with ingesting new documents into MarkLogic based on data received via the
@@ -142,31 +145,40 @@ public class MarkLogicSinkTask extends SinkTask {
 	 */
 	@Override
 	public void put(final Collection<SinkRecord> records) {
-		if (records.isEmpty()) {
-			return;
-		}
-
-		records.forEach(record -> {
-			if (record == null) {
-				logger.warn("Skipping null record object.");
-			} else {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Processing record value {} in topic {}", record.value(), record.topic());
-				}
-				if (record.value() != null) {
-					writeBatcher.add(sinkRecordConverter.convert(record));
-				} else {
-					logger.warn("Skipping record with null value - possibly a 'tombstone' message.");
-				}
+		
+			if (records.isEmpty()) {
+				logger.info ("No sink records to process for current poll operation");
+				return;
 			}
-		});
-
-		if (writeBatcher != null) {
-			writeBatcher.flushAsync();
-		} else {
-			logger.warn("writeBatcher is null - ignore this is you are running unit tests, otherwise this is a problem.");
-		}
+			logger.info("# of records in the current poll operation::{}", records.size());
+			records.forEach(record -> {
+				if (record == null) {
+					logger.warn("Skipping null record object.");
+				} else {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Processing record value {} in topic {}", record.value(), record.topic());
+					}
+					if (record.value() != null) {
+						try {
+							writeBatcher.add(sinkRecordConverter.convert(record));
+						}
+						catch (IOException e) {
+						}
+					} else {
+						logger.warn("Skipping record with null value - possibly a 'tombstone' message.");
+					}
+				}
+			});
+	
+			if (writeBatcher != null) {
+				logger.info("Flushing....");
+				writeBatcher.flushAsync();
+			} else {
+				logger.warn("writeBatcher is null - ignore this is you are running unit tests, otherwise this is a problem.");
+			}
 	}
+		
+
 
 	public String version() {
 		return MarkLogicSinkConnector.MARKLOGIC_SINK_CONNECTOR_VERSION;
