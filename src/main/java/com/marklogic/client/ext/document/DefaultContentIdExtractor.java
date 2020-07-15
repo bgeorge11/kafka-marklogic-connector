@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 
 public class DefaultContentIdExtractor implements ContentIdExtractor {
 	private static final Logger logger = LoggerFactory.getLogger(MarkLogicSinkTask.class);
+
 	@Override
 	public String extractId(AbstractWriteHandle content) {
 		return UUID.randomUUID().toString();
@@ -42,17 +43,16 @@ public class DefaultContentIdExtractor implements ContentIdExtractor {
 		}
 	}
 
-
 	@Override
 	public String extractId(AbstractWriteHandle content, String[] paths) {
 		ObjectMapper om = new ObjectMapper();
 		String valueString = "";
 		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
 			JsonNode node = om.readTree(content.toString());
 			for (int i=0; i<paths.length; i++) {
-				valueString = valueString + node.at(paths[i]).asText();
+				valueString = valueString + node.at(paths[i].trim()).asText();
 			}
-			MessageDigest md = MessageDigest.getInstance("MD5");
 			String id = bytesToHex(md.digest(valueString.getBytes()));
 			return id;
 		}
@@ -64,6 +64,32 @@ public class DefaultContentIdExtractor implements ContentIdExtractor {
 			logger.warn("NoSuchAlgorithmException. Not creating MD5 URI, instead generating UUID");
 			return UUID.randomUUID().toString();
 		}
+	}
+	
+	@Override
+	public String extractId(AbstractWriteHandle content, String topic, Integer partition, long offset, String idStrategy) {
+		String id = "";
+		if ("KAFKA_META_WITH_SLASH".equals(idStrategy)) {
+			id = topic + "/" + partition.toString() + "/" + String.valueOf(offset);
+			return id;
+		}
+		else if ("KAFKA_META_HASHED".equals(idStrategy)) {
+			try {
+				MessageDigest md = MessageDigest.getInstance("MD5");
+				String tmp = topic + partition.toString() + String.valueOf(offset);
+				id = bytesToHex(md.digest(tmp.getBytes()));
+				return id;
+			}
+			catch (NoSuchAlgorithmException e) {
+				logger.warn("NoSuchAlgorithmException. Not creating MD5 URI, instead generating UUID");
+				return UUID.randomUUID().toString();
+			}
+		}
+		else {
+			logger.warn("Not a valid URI Strategy, Generating UUID");
+			return UUID.randomUUID().toString();
+		}
+		
 	}
 	
     private static String bytesToHex(byte[] bytes) {

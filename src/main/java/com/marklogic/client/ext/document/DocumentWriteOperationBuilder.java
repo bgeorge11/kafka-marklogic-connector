@@ -24,7 +24,7 @@ public class DocumentWriteOperationBuilder {
 	private String path;
 	
 
-	public DocumentWriteOperation build(AbstractWriteHandle content, DocumentMetadataHandle metadata ) throws IOException {
+	public DocumentWriteOperation build(AbstractWriteHandle content, DocumentMetadataHandle metadata, String topic, Integer partition, long offset ) throws IOException {
 		if (content == null) {
 			throw new NullPointerException("'content' must not be null");
 		}
@@ -44,6 +44,15 @@ public class DocumentWriteOperationBuilder {
 		}
 		else if ("HASH".equals(idStrategy)) {
 			uri = buildUri(content,path.trim().split(","));
+		}
+		else if ("UUID".equals(idStrategy)) {
+			uri = buildUri(content);
+		}
+		else if ("KAFKA_META_WITH_SLASH".equals(idStrategy)) {
+			uri = buildUri(content,topic,partition,offset,idStrategy);
+		}
+		else if ("KAFKA_META_HASHED".equals(idStrategy)) {
+			uri = buildUri(content,topic,partition,offset,idStrategy);
 		}
 		else {
 			uri = buildUri(content);
@@ -79,6 +88,17 @@ public class DocumentWriteOperationBuilder {
 	
 	protected String buildUri(AbstractWriteHandle content,String[] paths) throws IOException  {
 		String uri = contentIdExtractor.extractId(content,paths);
+		if (hasText(uriPrefix)) {
+			uri = uriPrefix + uri;
+		}
+		if (hasText(uriSuffix)) {
+			uri += uriSuffix;
+		}
+		return uri;
+	}
+	
+	protected String buildUri(AbstractWriteHandle content,String topic, Integer partition, long offset, String idStrategy) throws IOException  {
+		String uri = contentIdExtractor.extractId(content,topic,partition,offset,idStrategy);
 		if (hasText(uriPrefix)) {
 			uri = uriPrefix + uri;
 		}

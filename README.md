@@ -1,13 +1,22 @@
 # v1.2.3 Changes 
-1. Supporting two ID Strategies for generating URIs - HASH and JSONPATH 
-Refer MarkLogic_Kafka_Connector_v1.2.3.pdf 
+1. Supporting four ID Strategies for generating URIs - HASH, JSONPATH, KAFKA_META_WITH_SLASH, KAFKA_META_HASHED
+2. Documented the support for ProtoBuf and JsonSchema messages.  
+Refer MarkLogic_Kafka_Connector_v1.2.3.pdf for more details. 
+With this version v1.2.3, MarkLogic Kafka sink connector supports all the Converters packaged with Confluent platform.
+
+	a) AvroConverter
+	b) ProtobufConverter
+	c) JsonSchemaConverter
+	d) JsonConverter
+	e) StringConverter
+	f) ByteArrayConverter
 
 # v1.2.2 Changes
 1. Support of AVRO and JSON Converters 
 2. Support of additional authentication options 
 3. Documentation of error handling
 4. Documentation of quick recipe of customizing the connector
-Refer MarkLogic_Kafka_Connector_v1.2.2.pdf 
+Refer MarkLogic_Kafka_Connector_v1.2.2.pdf for details
 
 # kafka-connect-marklogic
 

@@ -12,4 +12,5 @@ public interface ContentIdExtractor {
 	 */
 	String extractId(AbstractWriteHandle content, String path);
 	String extractId(AbstractWriteHandle content, String[] path);
+	String extractId(AbstractWriteHandle content, String topic, Integer partition, long offset, String idStrategy);
 } 

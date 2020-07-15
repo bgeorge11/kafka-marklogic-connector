@@ -37,6 +37,7 @@ public class DefaultSinkRecordConverter implements SinkRecordConverter {
 	 */
 	String converter = "STRING"; 
 	private static final Converter JSON_CONVERTER;
+	private static final Logger logger = LoggerFactory.getLogger(MarkLogicSinkTask.class);
 	static {
 	    JSON_CONVERTER = new JsonConverter();
 	    JSON_CONVERTER.configure(Collections.singletonMap("schemas.enable", "false"), false);
@@ -78,7 +79,15 @@ public class DefaultSinkRecordConverter implements SinkRecordConverter {
 	
 	@Override
 	public DocumentWriteOperation convert(SinkRecord sinkRecord) throws IOException{
-		return documentWriteOperationBuilder.build(toContent(sinkRecord), addTopicToCollections(sinkRecord.topic(), addTopicToCollections ) );
+		return documentWriteOperationBuilder.build(toContent(sinkRecord), 
+				                                   addTopicToCollections(sinkRecord.topic(), addTopicToCollections ),
+				                                   /*
+				                                    * v1.2.3
+				                                    */
+				                                   sinkRecord.topic(),
+				                                   sinkRecord.kafkaPartition(),
+				                                   sinkRecord.kafkaOffset()
+				                                   );
 	}
 
 	/**
@@ -114,16 +123,19 @@ public class DefaultSinkRecordConverter implements SinkRecordConverter {
 		if (schema != null && value instanceof Struct) {
 			/* Avro or JSON with schema, ignore schema, handle only the value */
 			converter = "AVRO_OR_JSON_WITH_SCHEMA";
+			logger.info("Avro or JsonWithSchema document received. Converting to byte[].");
 			final String payload = new String(JSON_CONVERTER.fromConnectData(record.topic(), schema, value), StandardCharsets.UTF_8);
 			value = payload.getBytes();
 		}
 		
         if (value instanceof Map) {
         	converter = "JSON_WITHOUT_SCHEMA";
+        	logger.info("Json document received. Converting to byte[]");
         	value = new String (JSON_CONVERTER.fromConnectData(record.topic(), null, value)).getBytes();
         }
         
 		if (value instanceof String) {
+			logger.info("String document received. Converting to byte[]");
 			converter = "STRING";
         }
 		
@@ -132,6 +144,7 @@ public class DefaultSinkRecordConverter implements SinkRecordConverter {
 		 */
 		
 		if (value instanceof byte[]) {
+			logger.info("Byte[] received. Proceeding with MarkLogic operations.");
 			BytesHandle content = new BytesHandle((byte[]) value);
 			if (format != null) {
 				content.withFormat(format);
